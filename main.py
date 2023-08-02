@@ -20,7 +20,7 @@ def listen_trigger_vedita():
     record.record_audiov2(filename_audio, keep_listening=True)
     with open(filename_audio, 'rb') as file:
         file_audio = file.read()
-    req = requests.post(f"{globalvar.base_url}/vedita_voice_commands", files={'file': ('audio.wav', file_audio)}, data={'status': globalvar.current_status}, verify=False)
+    req = requests.post(f"{globalvar.base_url}/vedita-voice-commands", files={'file': ('audio.wav', file_audio)}, data={'status': globalvar.current_status}, verify=False)
     if req.status_code == 200:
         response = req.content
         with open(globalvar.output_filename, 'wb') as file:
@@ -32,15 +32,15 @@ def listen_trigger_vedita():
         return True
     return False
 
-# Fungsi dibawah untuk mendengarkan sekaligus untuk mengekseksi command
+# Fungsi dibawah untuk mendengarkan sekaligus untuk mengeksekusi command
 def listen_command():
     filename_audio = os.path.join(get_base_path(), 'input.wav')
     audio = AudioPlayer()
     record = Record()
-    record.record_audiov2(filename_audio, timeout=10)
+    record.record_audiov2(filename_audio, timeout=30)
     with open(filename_audio, 'rb') as file:
         file_audio = file.read()
-    req = requests.post(f"{globalvar.base_url}/vedita_voice_commands", files={'file': ('audio.wav', file_audio)}, verify=False, data={'status': globalvar.current_status, 'language': globalvar.current_language})
+    req = requests.post(f"{globalvar.base_url}/vedita-voice-commands", files={'file': ('audio.wav', file_audio)}, verify=False, data={'status': globalvar.current_status, 'language': globalvar.current_language})
     if req.status_code == 200:
         response = req.json()
         data = response['data']
@@ -59,12 +59,15 @@ def listen_command():
             func = globals()[function_name]
             response = func(data, filename_audio)
             return response
+    # elif req.status_code == 500 or req.status_code == 404:
+    #     globalvar.change_status(constant.IDLE_STATUS)
     return False
 
 while True:
     try:
         if globalvar.current_status == constant.IDLE_STATUS:
-            triggered = listen_trigger_vedita()
+            # triggered = listen_trigger_vedita()
+            listen_trigger_vedita()
         elif globalvar.current_status != constant.IDLE_STATUS:
             listen_command()
     except KeyboardInterrupt:
