@@ -5,11 +5,18 @@ import globalvar
 import constant
 import base64
 import json
-from utils import convert_b64_to_file
+from PIL import Image
+from utils import convert_b64_to_file, make_request, show_image_full_screen
+import threading
+
+def action_ditaaja_reset_password(data, filename_audio):
+    return default_confirm(data, filename_audio)
+
+def action_ditaaja_unlock_domain(data, filename_audio):
+    return default_confirm(data, filename_audio)
 
 def action_konfirmasi_bahasa_id(data, filename_audio):
     return default_confirm(data, filename_audio)
-
 
 def action_konfirmasi_bahasa_eng(data, filename_audio):
     return default_confirm(data, filename_audio)
@@ -26,6 +33,12 @@ def action_cuaca_konfirmasi_kota(data, filename_audio):
 def action_suhu_konfirmasi_kota(data, filename_audio):
     return default_confirm(data, filename_audio)
 
+# def action_konfirmasi_faq_reset_password_desmita(data, filename_audio):
+#     return action_konfirmasi_faq_desmita(data, filename_audio)
+
+# def action_konfirmasi_faq_reset_password_desmita(data, filename_audio):
+#     return action_konfirmasi_faq_desmita(data, filename_audio)
+
 def action_konfirmasi_faq_desmita(data, filename_audio):
     b64_faq_img = False
     if "b64_faq_img" in data:
@@ -36,6 +49,8 @@ def action_konfirmasi_faq_desmita(data, filename_audio):
     else:
         print("B64 FAQ Img:",b64_faq_img)
         convert_b64_to_file(globalvar.output_faq_filename, b64_faq_img)
+        threading.Thread(target=show_image_full_screen, args=(globalvar.output_faq_filename, )).start()
+        
         audio = AudioPlayer()
         record = Record()
         record.record_audiov2(filename_audio)
@@ -59,7 +74,7 @@ def default_confirm(data, filename_audio):
         }),
         "language": globalvar.current_language
     }
-    req = requests.post(f"{globalvar.base_url}/vedita-action", data=payload, files={'file': ('audio.wav', file_audio)}, verify=False)
+    req = make_request(f"{globalvar.base_url}/vedita-action", method="POST", payload=payload, files={'file': ('audio.wav', file_audio)}, verify=False)
     if req.status_code == 200:
         result = req.json()
         data = result['data']
@@ -67,8 +82,11 @@ def default_confirm(data, filename_audio):
         b64_wav = base64.b64decode(b64_wav.encode('utf-8'))
         with open(globalvar.output_filename, 'wb') as wav_file:
             wav_file.write(b64_wav)
-        if "img" in data:
-            convert_b64_to_file(globalvar.output_faq_filename, data['img'])
+        print(data.keys())
+        if "b64_faq_img" in data:
+            convert_b64_to_file(globalvar.output_faq_filename, data['b64_faq_img'])
+            threading.Thread(target=show_image_full_screen, args=(globalvar.output_faq_filename, )).start()
+
         audio.load_audio(globalvar.output_filename)
         audio.play_audio()
         audio.exit()
